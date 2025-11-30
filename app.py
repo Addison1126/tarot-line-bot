@@ -9,7 +9,7 @@ from tarot_bot_logic import TarotBotLogic
 
 app = Flask(__name__)
 
-# 從環境變數取得 LINE 的設定 (等一下會在 Render 設定)
+# 從環境變數取得 LINE 的設定
 line_bot_api = LineBotApi(os.environ.get('CHANNEL_ACCESS_TOKEN'))
 handler = WebhookHandler(os.environ.get('CHANNEL_SECRET'))
 
@@ -36,29 +36,29 @@ def handle_message(event):
     user_id = event.source.user_id
     user_msg = event.message.text
     
-    # 1. 呼叫你的邏輯核心處理訊息
-    #這會回傳一個 list，例如 ["正在洗牌...", "結果是..."]
+    # 1. 呼叫邏輯核心處理訊息
+    # 這會回傳一個 list，裡面可能包含文字字串，或是 {'type': 'image', ...} 的字典
     reply_list = logic_bot.handle_message(user_id, user_msg)
     
-    # 2. 轉換回應格式 (把文字轉成 LINE 的訊息物件)
+    # 2. 轉換回應格式 (把邏輯端回傳的資料轉成 LINE 訊息物件)
     line_messages = []
     
-    for text_res in reply_list:
-        # 簡單的判斷：如果是圖片連結 (根據你的邏輯檔格式)
-        if "[🖼️ 圖片]:" in text_res:
-            # 提取網址 (這是一個簡易做法，對應你的邏輯輸出)
-            # 格式: [🖼️ 圖片]: https://...
-            try:
-                img_url = text_res.split(": ")[1].strip()
-                # 圖片與預覽圖都用同一個
-                line_messages.append(ImageSendMessage(original_content_url=img_url, preview_image_url=img_url))
-            except:
-                pass # 解析失敗就跳過
+    for content in reply_list:
+        # 判斷是否為圖片字典格式 (來自新版 logic)
+        # 格式範例: {'type': 'image', 'url': 'https://...'}
+        if isinstance(content, dict) and 'type' in content and content['type'] == 'image':
+            img_url = content['url']
+            line_messages.append(
+                ImageSendMessage(
+                    original_content_url=img_url,
+                    preview_image_url=img_url
+                )
+            )
         else:
-            # 一般文字訊息
-            line_messages.append(TextSendMessage(text=text_res))
+            # 純文字訊息，強制轉成字串以防萬一
+            line_messages.append(TextSendMessage(text=str(content)))
             
-    # LINE 一次最多只能回覆 5 則訊息，做個保護
+    # LINE 限制一次最多 5 則，超過會報錯，這裡做截斷保護
     if len(line_messages) > 5:
         line_messages = line_messages[:5]
 
