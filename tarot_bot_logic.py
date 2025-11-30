@@ -2,12 +2,12 @@ import random
 import time
 from datetime import datetime
 
-# --- 圖片生成器 ---
+# --- 圖片生成器 (修正版) ---
 def get_card_image(name_en):
-    # 使用 placeholder 生成假圖，實際請換成自己的圖床連結
-    # 將空格換成 + 以符合網址格式，避免 LINE 解析錯誤
+    # [修正] 改用 dummyimage.com，這個服務對 LINE 機器人比較穩定
+    # 格式：https://dummyimage.com/寬x高/背景色/文字色.png&text=文字
     clean = name_en.replace(" ", "+")
-    return f"https://via.placeholder.com/300x500.png?text={clean}"
+    return f"https://dummyimage.com/300x500/000000/ffffff.png&text={clean}"
 
 # --- 塔羅牌資料 (完整 22 張大阿爾克那) ---
 TAROT_DECK = [
